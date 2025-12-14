@@ -1,412 +1,356 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Daily Baby Review Tracker</title>
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body>
-    <div id="root"></div>
+import React, { useState, useEffect } from 'react';
+import { Calendar, Download, Search, LogOut, User } from 'lucide-react';
 
-    <script type="text/babel">
-        const { useState, useEffect } = React;
+const BabyReviewApp = () => {
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [reviews, setReviews] = useState([]);
+  const [currentReview, setCurrentReview] = useState({
+    date: new Date().toISOString().split('T')[0],
+    babyName: '',
+    answers: {}
+  });
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showAdminPanel, setShowAdminPanel] = useState(false);
 
-        // Lucide React Icons (simplified inline versions)
-        const Calendar = () => (
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-                <line x1="16" y1="2" x2="16" y2="6"></line>
-                <line x1="8" y1="2" x2="8" y2="6"></line>
-                <line x1="3" y1="10" x2="21" y2="10"></line>
-            </svg>
-        );
+  const ADMIN_USERNAME = 'admin';
+  const ADMIN_PASSWORD = 'babyadmin123'; // Change this before deploying!
 
-        const Download = ({ size = 18 }) => (
-            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                <polyline points="7 10 12 15 17 10"></polyline>
-                <line x1="12" y1="15" x2="12" y2="3"></line>
-            </svg>
-        );
+  const questions = [
+    { id: 'q1', text: 'Number of meals today', type: 'number' },
+    { id: 'q2', text: 'What meals did the baby have today?', type: 'textarea' },
+    { id: 'q3', text: 'Calcium requirements met today (number)', type: 'number' },
+    { id: 'q3', text: 'Calcium requirements met today (number)', type: 'number' },
+    { id: 'q4', text: 'Total calories today (number)', type: 'number' },
+    { id: 'q5', text: 'Did the baby take Vitamin-D today?', type: 'yesno' },
+    { id: 'q6', text: 'Did the baby do potty today?', type: 'yesno' },
+    { id: 'q7', text: 'Did the baby eat any leafy greens today?', type: 'yesno' },
+    { id: 'q8', text: 'Baby\'s energy level (1-10)?', type: 'range' },
+    { id: 'q9', text: 'Mama\'s energy level (1-10)?', type: 'range' },
+    { id: 'q10', text: 'Number of hours slept in the day?', type: 'number' },
+    { id: 'q11', text: 'Number of hours slept yesterday night?', type: 'number' },
+    { id: 'q12', text: 'Notable milestones today', type: 'textarea' },
+    { id: 'q13', text: 'Rate the baby\'s mood today?', type: 'textarea' },
+    { id: 'q14', text: 'Any new food that the baby tasted today?', type: 'textarea' },
+    { id: 'q15', text: 'Any health concerns?', type: 'textarea' },
+    { id: 'q16', text: 'Developmental activities done by the baby today?', type: 'textarea' }
+  ];
 
-        const Search = ({ size = 20 }) => (
-            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="11" cy="11" r="8"></circle>
-                <path d="m21 21-4.35-4.35"></path>
-            </svg>
-        );
+  useEffect(() => {
+    const savedReviews = localStorage.getItem('babyReviews');
+    if (savedReviews) {
+      setReviews(JSON.parse(savedReviews));
+    }
+  }, []);
 
-        const LogOut = ({ size = 18 }) => (
-            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                <polyline points="16 17 21 12 16 7"></polyline>
-                <line x1="21" y1="12" x2="9" y2="12"></line>
-            </svg>
-        );
+  const handleLogin = () => {
+    if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+      setIsAdmin(true);
+      setIsLoggedIn(true);
+    } else if (username && password) {
+      setIsLoggedIn(true);
+      setIsAdmin(false);
+    }
+    setPassword('');
+  };
 
-        const User = ({ size = 20 }) => (
-            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                <circle cx="12" cy="7" r="4"></circle>
-            </svg>
-        );
+  const handleLogout = () => {
+    setIsLoggedIn(false);
+    setIsAdmin(false);
+    setUsername('');
+    setShowAdminPanel(false);
+  };
 
-        const BabyReviewApp = () => {
-            const [isAdmin, setIsAdmin] = useState(false);
-            const [isLoggedIn, setIsLoggedIn] = useState(false);
-            const [username, setUsername] = useState('');
-            const [password, setPassword] = useState('');
-            const [reviews, setReviews] = useState([]);
-            const [currentReview, setCurrentReview] = useState({
-                date: new Date().toISOString().split('T')[0],
-                babyName: '',
-                answers: {}
-            });
-            const [searchTerm, setSearchTerm] = useState('');
-            const [showAdminPanel, setShowAdminPanel] = useState(false);
+  const handleInputChange = (questionId, value) => {
+    setCurrentReview(prev => ({
+      ...prev,
+      answers: {
+        ...prev.answers,
+        [questionId]: value
+      }
+    }));
+  };
 
-            const ADMIN_USERNAME = 'admin';
-            const ADMIN_PASSWORD = 'babyadmin123'; // Change this before deploying!
+  const handleSubmit = () => {
+    if (!currentReview.babyName) {
+      alert('Please fill in baby name');
+      return;
+    }
 
-            const questions = [
-                { id: 'q1', text: 'Number of meals today', type: 'number' },
-                { id: 'q2', text: 'What meals did the baby have today?', type: 'textarea' },
-                { id: 'q3', text: 'Calcium requirements met today (number)', type: 'number' },
-                { id: 'q4', text: 'Total calories today (number)', type: 'number' },
-                { id: 'q5', text: 'Did the baby take Vitamin-D today?', type: 'yesno' },
-                { id: 'q6', text: 'Did the baby do potty today?', type: 'yesno' },
-                { id: 'q7', text: 'Did the baby eat any leafy greens today?', type: 'yesno' },
-                { id: 'q8', text: 'Baby\'s energy level (1-10)?', type: 'range' },
-                { id: 'q9', text: 'Mama\'s energy level (1-10)?', type: 'range' },
-                { id: 'q10', text: 'Number of hours slept in the day?', type: 'number' },
-                { id: 'q11', text: 'Number of hours slept yesterday night?', type: 'number' },
-                { id: 'q12', text: 'Notable milestones today', type: 'textarea' },
-                { id: 'q13', text: 'Rate the baby\'s mood today?', type: 'textarea' },
-                { id: 'q14', text: 'Any new food that the baby tasted today?', type: 'textarea' },
-                { id: 'q15', text: 'Any health concerns?', type: 'textarea' },
-                { id: 'q16', text: 'Developmental activities done by the baby today?', type: 'textarea' }
-            ];
+    const allAnswered = questions.every(q => currentReview.answers[q.id] !== undefined && currentReview.answers[q.id] !== '');
+    if (!allAnswered) {
+      alert('Please answer all questions');
+      return;
+    }
 
-            useEffect(() => {
-                const savedReviews = localStorage.getItem('babyReviews');
-                if (savedReviews) {
-                    setReviews(JSON.parse(savedReviews));
-                }
-            }, []);
+    const newReview = {
+      ...currentReview,
+      id: Date.now(),
+      submittedBy: username,
+      submittedAt: new Date().toISOString()
+    };
+    const updatedReviews = [...reviews, newReview];
+    setReviews(updatedReviews);
+    localStorage.setItem('babyReviews', JSON.stringify(updatedReviews));
+    
+    setCurrentReview({
+      date: new Date().toISOString().split('T')[0],
+      babyName: '',
+      answers: {}
+    });
+    alert('Review submitted successfully!');
+  };
 
-            const handleLogin = () => {
-                if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
-                    setIsAdmin(true);
-                    setIsLoggedIn(true);
-                } else if (username && password) {
-                    setIsLoggedIn(true);
-                    setIsAdmin(false);
-                }
-                setPassword('');
-            };
+  const handleExport = () => {
+    const dataStr = JSON.stringify(reviews, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `baby-reviews-${new Date().toISOString().split('T')[0]}.json`;
+    link.click();
+  };
 
-            const handleLogout = () => {
-                setIsLoggedIn(false);
-                setIsAdmin(false);
-                setUsername('');
-                setShowAdminPanel(false);
-            };
+  const filteredReviews = reviews.filter(review => {
+    if (!searchTerm) return true;
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      review.babyName?.toLowerCase().includes(searchLower) ||
+      review.date?.includes(searchTerm) ||
+      Object.values(review.answers).some(answer => 
+        answer?.toString().toLowerCase().includes(searchLower)
+      )
+    );
+  });
 
-            const handleInputChange = (questionId, value) => {
-                setCurrentReview(prev => ({
-                    ...prev,
-                    answers: {
-                        ...prev.answers,
-                        [questionId]: value
-                    }
-                }));
-            };
+  if (!isLoggedIn) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-pink-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-lg shadow-xl p-8 max-w-md w-full">
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold text-gray-800 mb-2">Daily Baby Review</h1>
+            <p className="text-gray-600">Track your baby's daily progress</p>
+          </div>
+          <div>
+            <div className="mb-4">
+              <label className="block text-gray-700 mb-2">Username</label>
+              <input
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleLogin()}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+            <div className="mb-6">
+              <label className="block text-gray-700 mb-2">Password</label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleLogin()}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+            <button
+              onClick={handleLogin}
+              className="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 transition"
+            >
+              Login
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-            const handleSubmit = () => {
-                if (!currentReview.babyName) {
-                    alert('Please fill in baby name');
-                    return;
-                }
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-pink-50 p-4">
+      <div className="max-w-4xl mx-auto">
+        <div className="bg-white rounded-lg shadow-xl p-6 mb-6">
+          <div className="flex justify-between items-center">
+            <h1 className="text-3xl font-bold text-gray-800">Daily Baby Review</h1>
+            <div className="flex items-center gap-4">
+              <span className="flex items-center gap-2 text-gray-600">
+                <User size={20} />
+                {username} {isAdmin && '(Admin)'}
+              </span>
+              {isAdmin && (
+                <button
+                  onClick={() => setShowAdminPanel(!showAdminPanel)}
+                  className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition"
+                >
+                  {showAdminPanel ? 'Form' : 'Admin Panel'}
+                </button>
+              )}
+              <button
+                onClick={handleLogout}
+                className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition"
+              >
+                <LogOut size={18} />
+                Logout
+              </button>
+            </div>
+          </div>
+        </div>
 
-                const allAnswered = questions.every(q => currentReview.answers[q.id] !== undefined && currentReview.answers[q.id] !== '');
-                if (!allAnswered) {
-                    alert('Please answer all questions');
-                    return;
-                }
-
-                const newReview = {
-                    ...currentReview,
-                    id: Date.now(),
-                    submittedBy: username,
-                    submittedAt: new Date().toISOString()
-                };
-                const updatedReviews = [...reviews, newReview];
-                setReviews(updatedReviews);
-                localStorage.setItem('babyReviews', JSON.stringify(updatedReviews));
-                
-                setCurrentReview({
-                    date: new Date().toISOString().split('T')[0],
-                    babyName: '',
-                    answers: {}
-                });
-                alert('Review submitted successfully!');
-            };
-
-            const handleExport = () => {
-                const dataStr = JSON.stringify(reviews, null, 2);
-                const dataBlob = new Blob([dataStr], { type: 'application/json' });
-                const url = URL.createObjectURL(dataBlob);
-                const link = document.createElement('a');
-                link.href = url;
-                link.download = `baby-reviews-${new Date().toISOString().split('T')[0]}.json`;
-                link.click();
-            };
-
-            const filteredReviews = reviews.filter(review => {
-                if (!searchTerm) return true;
-                const searchLower = searchTerm.toLowerCase();
-                return (
-                    review.babyName?.toLowerCase().includes(searchLower) ||
-                    review.date?.includes(searchTerm) ||
-                    Object.values(review.answers).some(answer => 
-                        answer?.toString().toLowerCase().includes(searchLower)
-                    )
-                );
-            });
-
-            if (!isLoggedIn) {
-                return (
-                    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-pink-50 flex items-center justify-center p-4">
-                        <div className="bg-white rounded-lg shadow-xl p-8 max-w-md w-full">
-                            <div className="text-center mb-8">
-                                <h1 className="text-3xl font-bold text-gray-800 mb-2">Daily Baby Review</h1>
-                                <p className="text-gray-600">Track your baby's daily progress</p>
-                            </div>
-                            <div>
-                                <div className="mb-4">
-                                    <label className="block text-gray-700 mb-2">Username</label>
-                                    <input
-                                        type="text"
-                                        value={username}
-                                        onChange={(e) => setUsername(e.target.value)}
-                                        onKeyPress={(e) => e.key === 'Enter' && handleLogin()}
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                    />
-                                </div>
-                                <div className="mb-6">
-                                    <label className="block text-gray-700 mb-2">Password</label>
-                                    <input
-                                        type="password"
-                                        value={password}
-                                        onChange={(e) => setPassword(e.target.value)}
-                                        onKeyPress={(e) => e.key === 'Enter' && handleLogin()}
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                    />
-                                </div>
-                                <button
-                                    onClick={handleLogin}
-                                    className="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 transition"
-                                >
-                                    Login
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                );
-            }
-
-            return (
-                <div className="min-h-screen bg-gradient-to-br from-blue-50 to-pink-50 p-4">
-                    <div className="max-w-4xl mx-auto">
-                        <div className="bg-white rounded-lg shadow-xl p-6 mb-6">
-                            <div className="flex justify-between items-center">
-                                <h1 className="text-3xl font-bold text-gray-800">Daily Baby Review</h1>
-                                <div className="flex items-center gap-4">
-                                    <span className="flex items-center gap-2 text-gray-600">
-                                        <User size={20} />
-                                        {username} {isAdmin && '(Admin)'}
-                                    </span>
-                                    {isAdmin && (
-                                        <button
-                                            onClick={() => setShowAdminPanel(!showAdminPanel)}
-                                            className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition"
-                                        >
-                                            {showAdminPanel ? 'Form' : 'Admin Panel'}
-                                        </button>
-                                    )}
-                                    <button
-                                        onClick={handleLogout}
-                                        className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition"
-                                    >
-                                        <LogOut size={18} />
-                                        Logout
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        {!showAdminPanel ? (
-                            <div className="bg-white rounded-lg shadow-xl p-6">
-                                <div>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                                        <div>
-                                            <label className="block text-gray-700 mb-2">Review Date</label>
-                                            <input
-                                                type="date"
-                                                value={currentReview.date}
-                                                onChange={(e) => setCurrentReview({...currentReview, date: e.target.value})}
-                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-gray-700 mb-2">Baby Name</label>
-                                            <input
-                                                type="text"
-                                                value={currentReview.babyName}
-                                                onChange={(e) => setCurrentReview({...currentReview, babyName: e.target.value})}
-                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-6">
-                                        {questions.map((question, index) => (
-                                            <div key={question.id} className="border-b pb-4">
-                                                <label className="block text-gray-700 font-medium mb-2">
-                                                    {index + 1}. {question.text}
-                                                </label>
-                                                {question.type === 'number' && (
-                                                    <input
-                                                        type="number"
-                                                        step="0.1"
-                                                        value={currentReview.answers[question.id] || ''}
-                                                        onChange={(e) => handleInputChange(question.id, e.target.value)}
-                                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                                                    />
-                                                )}
-                                                {question.type === 'yesno' && (
-                                                    <div className="flex gap-4">
-                                                        <button
-                                                            onClick={() => handleInputChange(question.id, 'Yes')}
-                                                            className={`px-6 py-2 rounded-lg transition ${
-                                                                currentReview.answers[question.id] === 'Yes'
-                                                                    ? 'bg-green-500 text-white'
-                                                                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                                                            }`}
-                                                        >
-                                                            Yes
-                                                        </button>
-                                                        <button
-                                                            onClick={() => handleInputChange(question.id, 'No')}
-                                                            className={`px-6 py-2 rounded-lg transition ${
-                                                                currentReview.answers[question.id] === 'No'
-                                                                    ? 'bg-red-500 text-white'
-                                                                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                                                            }`}
-                                                        >
-                                                            No
-                                                        </button>
-                                                    </div>
-                                                )}
-                                                {question.type === 'textarea' && (
-                                                    <textarea
-                                                        value={currentReview.answers[question.id] || ''}
-                                                        onChange={(e) => handleInputChange(question.id, e.target.value)}
-                                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                                                        rows="3"
-                                                        placeholder="Enter details..."
-                                                    />
-                                                )}
-                                                {question.type === 'range' && (
-                                                    <div>
-                                                        <input
-                                                            type="range"
-                                                            min="1"
-                                                            max="10"
-                                                            value={currentReview.answers[question.id] || 5}
-                                                            onChange={(e) => handleInputChange(question.id, e.target.value)}
-                                                            className="w-full"
-                                                        />
-                                                        <div className="text-center text-gray-600 font-bold text-xl">
-                                                            {currentReview.answers[question.id] || 5}
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        ))}
-                                    </div>
-
-                                    <button
-                                        onClick={handleSubmit}
-                                        className="w-full mt-6 bg-green-500 text-white py-3 rounded-lg hover:bg-green-600 transition font-bold text-lg"
-                                    >
-                                        Submit Today's Review
-                                    </button>
-                                </div>
-                            </div>
-                        ) : (
-                            <div className="bg-white rounded-lg shadow-xl p-6">
-                                <div className="flex justify-between items-center mb-6">
-                                    <h2 className="text-2xl font-bold text-gray-800">Admin Panel - All Reviews</h2>
-                                    <button
-                                        onClick={handleExport}
-                                        className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition"
-                                    >
-                                        <Download size={18} />
-                                        Export Data
-                                    </button>
-                                </div>
-
-                                <div className="mb-6">
-                                    <div className="flex items-center gap-2">
-                                        <Search size={20} />
-                                        <input
-                                            type="text"
-                                            placeholder="Search reviews by name, date, or content..."
-                                            value={searchTerm}
-                                            onChange={(e) => setSearchTerm(e.target.value)}
-                                            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="space-y-4">
-                                    {filteredReviews.length === 0 ? (
-                                        <p className="text-gray-500 text-center py-8">No reviews found</p>
-                                    ) : (
-                                        filteredReviews.map((review) => (
-                                            <div key={review.id} className="border rounded-lg p-4 hover:shadow-md transition">
-                                                <div className="flex justify-between items-start mb-4">
-                                                    <div>
-                                                        <h3 className="text-xl font-bold text-gray-800">{review.babyName}</h3>
-                                                        <p className="text-gray-600">Date: {review.date}</p>
-                                                        <p className="text-sm text-gray-500">Submitted by: {review.submittedBy} on {new Date(review.submittedAt).toLocaleString()}</p>
-                                                    </div>
-                                                </div>
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                                    {questions.map((question) => (
-                                                        <div key={question.id} className="text-sm">
-                                                            <span className="font-medium text-gray-700">{question.text}</span>
-                                                            <p className="text-gray-600 ml-2">{review.answers[question.id]}</p>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        ))
-                                    )}
-                                </div>
-                            </div>
-                        )}
-                    </div>
+        {!showAdminPanel ? (
+          <div className="bg-white rounded-lg shadow-xl p-6">
+            <div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <div>
+                  <label className="block text-gray-700 mb-2">Review Date</label>
+                  <input
+                    type="date"
+                    value={currentReview.date}
+                    onChange={(e) => setCurrentReview({...currentReview, date: e.target.value})}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  />
                 </div>
-            );
-        };
+                <div>
+                  <label className="block text-gray-700 mb-2">Baby Name</label>
+                  <input
+                    type="text"
+                    value={currentReview.babyName}
+                    onChange={(e) => setCurrentReview({...currentReview, babyName: e.target.value})}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
 
-        ReactDOM.render(<BabyReviewApp />, document.getElementById('root'));
-    </script>
-</body>
-</html>
+              <div className="space-y-6">
+                {questions.map((question, index) => (
+                  <div key={question.id} className="border-b pb-4">
+                    <label className="block text-gray-700 font-medium mb-2">
+                      {index + 1}. {question.text}
+                    </label>
+                    {question.type === 'number' && (
+                      <input
+                        type="number"
+                        step="0.1"
+                        value={currentReview.answers[question.id] || ''}
+                        onChange={(e) => handleInputChange(question.id, e.target.value)}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      />
+                    )}
+                    {question.type === 'yesno' && (
+                      <div className="flex gap-4">
+                        <button
+                          onClick={() => handleInputChange(question.id, 'Yes')}
+                          className={`px-6 py-2 rounded-lg transition ${
+                            currentReview.answers[question.id] === 'Yes'
+                              ? 'bg-green-500 text-white'
+                              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                          }`}
+                        >
+                          Yes
+                        </button>
+                        <button
+                          onClick={() => handleInputChange(question.id, 'No')}
+                          className={`px-6 py-2 rounded-lg transition ${
+                            currentReview.answers[question.id] === 'No'
+                              ? 'bg-red-500 text-white'
+                              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                          }`}
+                        >
+                          No
+                        </button>
+                      </div>
+                    )}
+                    {question.type === 'textarea' && (
+                      <textarea
+                        value={currentReview.answers[question.id] || ''}
+                        onChange={(e) => handleInputChange(question.id, e.target.value)}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        rows="3"
+                        placeholder="Enter details..."
+                      />
+                    )}
+                    {question.type === 'range' && (
+                      <div>
+                        <input
+                          type="range"
+                          min="1"
+                          max="10"
+                          value={currentReview.answers[question.id] || 5}
+                          onChange={(e) => handleInputChange(question.id, e.target.value)}
+                          className="w-full"
+                        />
+                        <div className="text-center text-gray-600 font-bold text-xl">
+                          {currentReview.answers[question.id] || 5}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              <button
+                onClick={handleSubmit}
+                className="w-full mt-6 bg-green-500 text-white py-3 rounded-lg hover:bg-green-600 transition font-bold text-lg"
+              >
+                Submit Today's Review
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="bg-white rounded-lg shadow-xl p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-gray-800">Admin Panel - All Reviews</h2>
+              <button
+                onClick={handleExport}
+                className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition"
+              >
+                <Download size={18} />
+                Export Data
+              </button>
+            </div>
+
+            <div className="mb-6">
+              <div className="flex items-center gap-2">
+                <Search size={20} className="text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search reviews by name, date, or content..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              {filteredReviews.length === 0 ? (
+                <p className="text-gray-500 text-center py-8">No reviews found</p>
+              ) : (
+                filteredReviews.map((review) => (
+                  <div key={review.id} className="border rounded-lg p-4 hover:shadow-md transition">
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <h3 className="text-xl font-bold text-gray-800">{review.babyName}</h3>
+                        <p className="text-gray-600">Date: {review.date}</p>
+                        <p className="text-sm text-gray-500">Submitted by: {review.submittedBy} on {new Date(review.submittedAt).toLocaleString()}</p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {questions.map((question) => (
+                        <div key={question.id} className="text-sm">
+                          <span className="font-medium text-gray-700">{question.text}</span>
+                          <p className="text-gray-600 ml-2">{review.answers[question.id]}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default BabyReviewApp;
